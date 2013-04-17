@@ -1,0 +1,20 @@
+                                                // static import of CL10 is neccesary
+CLDevice dev = clCreateBuffer(                  //CLMem instead of CLDevice
+context,                    
+CL_MEM_COPY_HOST_PTR | CL_MEM_WRITE_ONLY,       // either copyhostptr and a buffer
+128,                                            // or remove copyhostptr (size*4??)
+null);  
+
+CLMem mem = clCreateBuffer(
+context,
+CL_MEM_COPY_HOST_PTR | CL_MEM_WRITE_ONLY,
+buffer,
+null);
+
+oder 
+
+CLMem mem = clCreateBuffer(
+context,
+CL_MEM_WRITE_ONLY,
+128,
+null);
