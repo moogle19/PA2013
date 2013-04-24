@@ -1,0 +1,6 @@
+a)
+	Fehler! Zuweisung von float zu float*. 
+b)
+	c = 2;
+c)
+	h = 2; (c[1])
