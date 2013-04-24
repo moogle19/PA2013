@@ -5,13 +5,20 @@ CL_MEM_COPY_HOST_PTR | CL_MEM_WRITE_ONLY,       // either copyhostptr and a buff
 128,                                            // or remove copyhostptr (size*4??)
 null);  
 
+//---------------
+
+IntBuffer hostBuffer = BufferUtils.createIntBuffer(32);
+//Bufferzuweisung 
+hostBuffer.position(0)
+
 CLMem mem = clCreateBuffer(
 context,
 CL_MEM_COPY_HOST_PTR | CL_MEM_WRITE_ONLY,
-buffer,
+hostBuffer,
 null);
 
-oder 
+
+//oder ---------- 
 
 CLMem mem = clCreateBuffer(
 context,
