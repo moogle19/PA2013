@@ -25,7 +25,7 @@ public class HelloOpenCL {
       
    
       /* Vorlesung 2013-04-17, Folie 19       */
-      List<CLDevice> devices = platform.getDevices(CL_DEVICE_TYPE_ALL); // Modifiziert: (ALL statt CPU)
+      List<CLDevice> devices = platform.getDevices(CL_DEVICE_TYPE_GPU); // Modifiziert: (ALL statt CPU)
       CLDevice device = devices.get(0);   
       
       

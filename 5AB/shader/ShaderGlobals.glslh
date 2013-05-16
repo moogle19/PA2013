@@ -1,0 +1,16 @@
+
+layout (std140) uniform Camera
+{
+    mat4x4 g_view;
+    mat4x4 g_projection;
+};
+
+/*layout (std140) uniform Model
+{
+    mat4x4 g_model;
+}; */
+
+layout (std140) uniform Color
+{
+    vec4 g_color;
+};
