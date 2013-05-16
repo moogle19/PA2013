@@ -4,16 +4,6 @@ package nbody;
 
 import static pa.cl.OpenCL.*;
 
-import static pa.cl.OpenCL.clBuildProgram;
-import static pa.cl.OpenCL.clCreateCommandQueue;
-import static pa.cl.OpenCL.clCreateContext;
-import static pa.cl.OpenCL.clCreateKernel;
-import static pa.cl.OpenCL.clCreateProgramWithSource;
-import static pa.cl.OpenCL.clReleaseCommandQueue;
-import static pa.cl.OpenCL.clReleaseContext;
-import static pa.cl.OpenCL.clReleaseKernel;
-import static pa.cl.OpenCL.clReleaseProgram;
-
 import java.nio.FloatBuffer;
 
 import nbody.helper.NBodyData;
@@ -45,7 +35,6 @@ public class NBodySim
     private PointerBuffer globalWorkSize = new PointerBuffer(1);
     private int numBodys = 15360;
     private long time;
-    private CLMem positions[];
 
     public void init()
     {	
@@ -84,32 +73,30 @@ public class NBodySim
         //an opencl view on these
         //these objects can be used to modify positions in a kernel
         //we use two to be doublebuffered
-        positions = vis.createPositions(p, context);
+        CLMem positions[] = vis.createPositions(p, context);
         
         FloatBuffer V_Host = BufferUtils.createFloatBuffer(v.length);
         V_Host.put(v);
         V_Host.rewind();
         CLMem V = CL10.clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, V_Host, null);
-        float eps = 0.5f;
+        
+        //TODO: what value for epsilon?
+        float eps = 1f;
+        
         CL10.clSetKernelArg(kernel, 0, positions[0]);
         CL10.clSetKernelArg(kernel, 1, positions[1]);
         CL10.clSetKernelArg(kernel, 2, V);
         clSetKernelArg(kernel, 4, eps);
-
-
-        //TODO
     }
     
     public void run()
     {
         init();
-        CLMem p;
-        CLMem pNeu;
         time = System.currentTimeMillis();
         while(!vis.isDone())
         {            
             //simulate here
-            //TODO
+            //TODO: switch pos0 and pos1
         	clSetKernelArg(kernel, 3, (float)(System.currentTimeMillis() - time)/10000);
         	clEnqueueNDRangeKernel(queue, kernel, 1, null, globalWorkSize, null, null, null);
 
@@ -117,6 +104,7 @@ public class NBodySim
             time = System.currentTimeMillis();
             //render here
             vis.visualize();
+            
         }
         close();
     }
@@ -124,7 +112,7 @@ public class NBodySim
     public void close()
     {
         //clean up here
-        //TODO
+        //TODO: clean up
         
         if(kernel != null)
         {
