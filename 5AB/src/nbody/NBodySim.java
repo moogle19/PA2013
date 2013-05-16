@@ -1,5 +1,9 @@
 package nbody;
 
+
+
+import static pa.cl.OpenCL.*;
+
 import static pa.cl.OpenCL.clBuildProgram;
 import static pa.cl.OpenCL.clCreateCommandQueue;
 import static pa.cl.OpenCL.clCreateContext;
@@ -9,11 +13,16 @@ import static pa.cl.OpenCL.clReleaseCommandQueue;
 import static pa.cl.OpenCL.clReleaseContext;
 import static pa.cl.OpenCL.clReleaseKernel;
 import static pa.cl.OpenCL.clReleaseProgram;
+
+import java.nio.FloatBuffer;
+
 import nbody.helper.NBodyData;
 import nbody.helper.NBodyVisualizer;
 
+import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.opencl.CL10;
 import org.lwjgl.opencl.CLCommandQueue;
 import org.lwjgl.opencl.CLContext;
 import org.lwjgl.opencl.CLKernel;
@@ -35,9 +44,11 @@ public class NBodySim
     private CLContext context;
     private PointerBuffer globalWorkSize = new PointerBuffer(1);
     private int numBodys = 15360;
+    private long time;
+    private CLMem positions[];
 
     public void init()
-    {
+    {	
         vis = new NBodyVisualizer(1024, 768);
         try 
         {
@@ -73,19 +84,37 @@ public class NBodySim
         //an opencl view on these
         //these objects can be used to modify positions in a kernel
         //we use two to be doublebuffered
-        CLMem positions[] = vis.createPositions(p, context);
+        positions = vis.createPositions(p, context);
         
+        FloatBuffer V_Host = BufferUtils.createFloatBuffer(v.length);
+        V_Host.put(v);
+        V_Host.rewind();
+        CLMem V = CL10.clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, V_Host, null);
+        float eps = 0.5f;
+        CL10.clSetKernelArg(kernel, 0, positions[0]);
+        CL10.clSetKernelArg(kernel, 1, positions[1]);
+        CL10.clSetKernelArg(kernel, 2, V);
+        clSetKernelArg(kernel, 4, eps);
+
+
         //TODO
     }
     
     public void run()
     {
         init();
+        CLMem p;
+        CLMem pNeu;
+        time = System.currentTimeMillis();
         while(!vis.isDone())
         {            
             //simulate here
             //TODO
-            
+        	clSetKernelArg(kernel, 3, (float)(System.currentTimeMillis() - time)/10000);
+        	clEnqueueNDRangeKernel(queue, kernel, 1, null, globalWorkSize, null, null, null);
+
+            clFinish(queue);
+            time = System.currentTimeMillis();
             //render here
             vis.visualize();
         }
