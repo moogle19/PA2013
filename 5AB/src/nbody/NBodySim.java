@@ -36,6 +36,7 @@ public class NBodySim
     private int numBodys = 15360;
     private long time;
     private boolean toggle = false;
+    private CLMem V, positions[];
 
     public void init()
     {	
@@ -75,12 +76,12 @@ public class NBodySim
         //an opencl view on these
         //these objects can be used to modify positions in a kernel
         //we use two to be doublebuffered
-        CLMem positions[] = vis.createPositions(p, context);
+        positions = vis.createPositions(p, context);
         
         FloatBuffer V_Host = BufferUtils.createFloatBuffer(v.length);
         V_Host.put(v);
         V_Host.rewind();
-        CLMem V = CL10.clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, V_Host, null);
+        V = CL10.clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, V_Host, null);
         
         //TODO: what value for epsilon?
         float eps = 1.0f;
@@ -130,6 +131,23 @@ public class NBodySim
     {
         //clean up here
         //TODO: clean up
+        if(positions != null)
+        {
+            clReleaseMemObject(V);
+            positions = null;
+        }
+        
+        if(V != null)
+        {
+            clReleaseMemObject(V);
+            V = null;
+        }
+        
+        if(kernel2 != null)
+        {
+            clReleaseKernel(kernel2);
+            kernel2 = null;
+        }
         
         if(kernel != null)
         {

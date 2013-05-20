@@ -10,7 +10,7 @@ const float DELTA_T, const float EPSILON_SQUARED)
 	
 	private float rx, ry, rz, Fx = 0, Fy = 0, Fz = 0, Fpow;
 	for(int i = 0; i < get_global_size(0); i++) {
-		float pw = 3/2;
+		//float pw = 3/2;
 		rx = -p[index*3] + p[i*3];
 		ry = -p[index*3 + 1] + p[i*3 + 1];
 		rz = -p[index*3 + 2] + p[i*3 + 2];
