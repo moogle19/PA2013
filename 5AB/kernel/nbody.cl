@@ -4,9 +4,9 @@ const float DELTA_T, const float EPSILON_SQUARED)
 {	
 	int index = get_global_id(0);
 	
-	pNeu[index*3] = p[index*3];
-	pNeu[index*3 + 1] = p[index*3 + 1];
-	pNeu[index*3 + 2] = p[index*3 + 2];
+	//pNeu[index*3] = p[index*3];
+	//pNeu[index*3 + 1] = p[index*3 + 1];
+	//pNeu[index*3 + 2] = p[index*3 + 2];
 	
 	private float rx, ry, rz, Fx = 0, Fy = 0, Fz = 0, Fpow;
 	for(int i = 0; i < get_global_size(0); i++) {
@@ -31,7 +31,7 @@ const float DELTA_T, const float EPSILON_SQUARED)
 	pNeu[index*3 + 1] = p[index*3 + 1] + v[index*3 + 1] * DELTA_T;
 	pNeu[index*3 + 2] = p[index*3 + 2] + v[index*3 + 2] * DELTA_T;
 	
-	p[index*3] = pNeu[index*3];
-	p[index*3 + 1] = pNeu[index*3 + 1];
-	p[index*3 + 2] = pNeu[index*3 + 2];
+	//p[index*3] = pNeu[index*3];
+	//p[index*3 + 1] = pNeu[index*3 + 1];
+	//p[index*3 + 2] = pNeu[index*3 + 2];
 }

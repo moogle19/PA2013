@@ -28,13 +28,14 @@ public class NBodySim
 {
     private NBodyVisualizer vis;
     private PlatformDevicePair pair;
-    private CLKernel kernel;
+    private CLKernel kernel, kernel2;
     private CLProgram program;
     private CLCommandQueue queue;
     private CLContext context;
     private PointerBuffer globalWorkSize = new PointerBuffer(1);
     private int numBodys = 15360;
     private long time;
+    private boolean toggle = false;
 
     public void init()
     {	
@@ -54,6 +55,7 @@ public class NBodySim
         program = clCreateProgramWithSource(context, IOUtil.readFileContent("kernel/nbody.cl"));
         clBuildProgram(program, pair.device, "", null);
         kernel = clCreateKernel(program, "nbody");
+        kernel2 = clCreateKernel(program, "nbody");
         vis.initGL();
         
         globalWorkSize.put(0, numBodys);
@@ -81,12 +83,17 @@ public class NBodySim
         CLMem V = CL10.clCreateBuffer(context, CL_MEM_COPY_HOST_PTR, V_Host, null);
         
         //TODO: what value for epsilon?
-        float eps = 1f;
+        float eps = 1.0f;
         
         CL10.clSetKernelArg(kernel, 0, positions[0]);
         CL10.clSetKernelArg(kernel, 1, positions[1]);
         CL10.clSetKernelArg(kernel, 2, V);
         clSetKernelArg(kernel, 4, eps);
+        
+        CL10.clSetKernelArg(kernel2, 1, positions[0]);
+        CL10.clSetKernelArg(kernel2, 0, positions[1]);
+        CL10.clSetKernelArg(kernel2, 2, V);
+        clSetKernelArg(kernel2, 4, eps);
     }
     
     public void run()
@@ -97,9 +104,19 @@ public class NBodySim
         {            
             //simulate here
             //TODO: switch pos0 and pos1
-        	clSetKernelArg(kernel, 3, (float)(System.currentTimeMillis() - time)/10000);
-        	clEnqueueNDRangeKernel(queue, kernel, 1, null, globalWorkSize, null, null, null);
-
+            if (toggle)
+            {
+                clSetKernelArg(kernel2, 3, (float)(System.currentTimeMillis() - time)/10000);
+                clEnqueueNDRangeKernel(queue, kernel2, 1, null, globalWorkSize, null, null, null);            
+            }
+            else
+            {
+                clSetKernelArg(kernel, 3, (float)(System.currentTimeMillis() - time)/10000);
+            	clEnqueueNDRangeKernel(queue, kernel, 1, null, globalWorkSize, null, null, null);
+            }
+            
+            toggle = !toggle;
+            	
             clFinish(queue);
             time = System.currentTimeMillis();
             //render here
