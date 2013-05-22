@@ -58,7 +58,13 @@ global float4* body_Pos,
 global float4* curveVertex_Pos,
 const uint VERTICES_PER_CURVE)
 {
-    
+	uint id = get_global_id(0);
+	uint vpc = VERTICES_PER_CURVE;
+	
+    for(int i = 0; i < vpc-1; i++) {
+    	curveVertex_Pos[id*vpc+i] = curveVertex_Pos[id*vpc+i+1];
+    }
+    curveVertex_Pos[id*vpc-1] = body_Pos[id];
 }
 
 kernel void setTrailParticle(
@@ -71,5 +77,10 @@ const int VERTICES_PER_CURVE,
 const float dSC,
 const float dSTP)
 {
-
+	uint id = get_global_id(0);
+	uint tppc = TRAIL_PARTICLES_PER_CURVE;
+	for(int i = 0; i < tppc-1; i++) {
+		trailParticle_Pos[id*tppc+i] = curveVertex_Pos[id*tppc+i];
+		trailParticle_Dir[id*tppc+i] = -curveVertex_Pos[id*tppc+i] + curveVertex_Pos[id*tppc+i+1];
+	}	
 }

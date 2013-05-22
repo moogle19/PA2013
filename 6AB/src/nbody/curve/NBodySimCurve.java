@@ -44,6 +44,8 @@ public class NBodySimCurve
     private PlatformDevicePair pair;
     private CLKernel nBody_CalcNewV;
     private CLKernel nBody_CalcNewPos;
+    private CLKernel passPositionOn;
+    private CLKernel setTrailParticle;
     private CLProgram program;
     private CLCommandQueue queue;
     private CLContext context;
@@ -94,6 +96,8 @@ public class NBodySimCurve
         
         nBody_CalcNewV = clCreateKernel(program, "nBody_CalcNewV");
         nBody_CalcNewPos = clCreateKernel(program, "nBody_CalcNewPos");
+        passPositionOn = clCreateKernel(program, "passPositionOn");
+        setTrailParticle = clCreateKernel(program, "setTrailParticle");
         
         //TODO
         
@@ -138,6 +142,19 @@ public class NBodySimCurve
         clSetKernelArg(nBody_CalcNewPos, 1, body_V);
         clSetKernelArg(nBody_CalcNewPos, 2, vis.getCurrentParams().m_timeStep);
         
+        clSetKernelArg(passPositionOn, 0, body_Pos);
+        clSetKernelArg(passPositionOn, 1, curve_Pos);
+        clSetKernelArg(passPositionOn, 2, VERTICES_PER_CURVE);
+        
+        clSetKernelArg(setTrailParticle, 0, trailParticle_Pos);
+        clSetKernelArg(setTrailParticle, 1, trailParticle_S);
+        clSetKernelArg(setTrailParticle, 2, trailParticle_Dir);
+        clSetKernelArg(setTrailParticle, 3, curve_Pos);
+        clSetKernelArg(setTrailParticle, 4, TRAIL_PARTICLES_PER_CURVE);
+        clSetKernelArg(setTrailParticle, 5, VERTICES_PER_CURVE);
+        clSetKernelArg(setTrailParticle, 6, dSC);
+        clSetKernelArg(setTrailParticle, 7, dSTP);
+
         //TODO
     }
     
@@ -151,8 +168,11 @@ public class NBodySimCurve
                 //simulate here
                 clEnqueueNDRangeKernel(queue, nBody_CalcNewV, 1, null, gws_BodyCnt, null, null, null);
                 clEnqueueNDRangeKernel(queue, nBody_CalcNewPos, 1, null, gws_BodyCnt, null, null, null);
-                
+                clEnqueueNDRangeKernel(queue, passPositionOn, 1, null, gws_BodyCnt, null, null, null);
+                clEnqueueNDRangeKernel(queue, setTrailParticle, 1, null, gws_BodyCnt, null, null, null);
+
                 //TODO
+                
                 
                 clFinish(queue);
             }
