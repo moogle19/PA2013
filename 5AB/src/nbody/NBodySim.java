@@ -133,7 +133,8 @@ public class NBodySim
         //TODO: clean up
         if(positions != null)
         {
-            clReleaseMemObject(V);
+            clReleaseMemObject(positions[0]);
+            clReleaseMemObject(positions[1]);
             positions = null;
         }
         
