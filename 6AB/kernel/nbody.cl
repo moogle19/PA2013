@@ -82,23 +82,24 @@ const float dSTP)
     uint vpc = VERTICES_PER_CURVE;
 
     uint prevCV, nextCV;
-    float sPrevCV, sTPLoc;
+    float tps, sPrevCV, sTPLoc;
     float4 prevCVpos, nextCVpos;
 
     for(int i = 0; i < tppc-1; i++)
     {
-        prevCV = floor(trailParticle_S[id*tppc+i] * (vpc - 1));
+        tps = trailParticle_S[id*tppc+i];
+        prevCV = floor(tps * (vpc - 1));
         nextCV = prevCV + 1;
         
         sPrevCV = prevCV * dSC;
         
-        sTPLoc = (trailParticle_S[id*tppc+i] - sPrevCV) / dSC;
+        sTPLoc = (tps - sPrevCV) / dSC;
 
         prevCVpos = curveVertex_Pos[id*tppc+prevCV];
         nextCVpos = curveVertex_Pos[id*tppc+nextCV];
 
         trailParticle_Pos[id*tppc+i] = (prevCVpos * (1 - sTPLoc) + sTPLoc * nextCVpos);
      
-        trailParticle_Dir[id*tppc+i] = (-prevCVpos + nextCVpos);
+        trailParticle_Dir[id*tppc+i] = nextCVpos - prevCVpos;
     }
 }
