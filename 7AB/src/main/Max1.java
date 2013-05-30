@@ -41,23 +41,31 @@ public class Max1
         OpenCL.clBuildProgram(program, pair.device, "", null);
         kernel = OpenCL.clCreateKernel(program, "max1");
         
-        int[] vals = {5, 7, 1, 3 ,9, 2, 6, 18}; //val = 40
+        int[] vals = {5, 7, 1, 3 ,9, 2, 6, 18, 20, 65};
+        
+        int newlength = vals.length;
+        //do stuff here
+        if(Integer.bitCount(newlength) > 1) {
+        	newlength = Integer.highestOneBit(newlength) * 2;
+        }
+        
         int stride = 1;
-        int threadCnt = vals.length/2;
+        int threadCnt = newlength/2;
         PointerBuffer gws_ValsCnt = new PointerBuffer(1);
-        gws_ValsCnt.put(0, vals.length/2);
-        IntBuffer valsBuff = BufferUtils.createIntBuffer(vals.length);
+        gws_ValsCnt.put(0, newlength/2);
+        IntBuffer valsBuff = BufferUtils.createIntBuffer(newlength);
+        BufferUtils.zeroBuffer(valsBuff);
         valsBuff.put(vals);
         valsBuff.rewind();
-        int log2n = (int) (Math.log(vals.length) / Math.log(2));
-
+        
         CLMem valsMem = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, valsBuff);
         
         clSetKernelArg(kernel, 0, valsMem);
         clSetKernelArg(kernel, 1, stride);
-        clSetKernelArg(kernel, 2, vals.length);
+        clSetKernelArg(kernel, 2, newlength);
         
-        //do stuff here
+        int log2n = (int) (Math.log(newlength) / Math.log(2));
+        
         for(int i = 0; i < log2n; i++) {
             clEnqueueNDRangeKernel(queue, kernel, 1, null, gws_ValsCnt, null, null, null);
             clSetKernelArg(kernel, 1, stride*=2);

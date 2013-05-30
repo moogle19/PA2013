@@ -43,21 +43,28 @@ public class Max2
         kernel = OpenCL.clCreateKernel(program, "max2");
         
         
-        int[] vals = {5, 7, 10, 13 ,19 , 20, 6, 8, 100, 0, 0, 0, 0, 0, 0, 0}; //val = 40
+        int[] vals = {5, 7, 10, 13 ,19 , 20, 6, 8, 100, 0, 0, 0, 0}; //val = 40
+        
+        int newlength = vals.length;
+        if(Integer.bitCount(newlength) > 1) {
+        	newlength = Integer.highestOneBit(newlength) * 2;
+        }
+        
         PointerBuffer gws_ValsCnt = new PointerBuffer(1);
-        gws_ValsCnt.put(0, vals.length);
-        IntBuffer valsBuff = BufferUtils.createIntBuffer(vals.length);
+        gws_ValsCnt.put(0, newlength);
+        IntBuffer valsBuff = BufferUtils.createIntBuffer(newlength);
+        BufferUtils.zeroBuffer(valsBuff);
         valsBuff.put(vals);
         valsBuff.rewind();
         
         CLMem valsMem = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, valsBuff);
         
-        if(vals.length > pair.device.getInfoInt(CL_DEVICE_MAX_WORK_GROUP_SIZE) * 2) {
+        if(newlength > pair.device.getInfoInt(CL_DEVICE_MAX_WORK_GROUP_SIZE) * 2) {
         	System.out.println("Too many values! max. " + (pair.device.getInfoInt(CL_DEVICE_MAX_WORK_GROUP_SIZE) * 2) + "!!!");
         	return;
         }
         
-        int log2n = (int) (Math.log(vals.length) / Math.log(2));
+        int log2n = (int) (Math.log(newlength) / Math.log(2));
         
         clSetKernelArg(kernel, 0, valsMem);
         clSetKernelArg(kernel, 1, log2n);
