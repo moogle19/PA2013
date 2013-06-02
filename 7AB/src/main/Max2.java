@@ -79,7 +79,7 @@ public class Max2
         
         CL10.clEnqueueReadBuffer(queue, valsMem, CL10.CL_FALSE, 0, valsBuff, null, null);
         CL10.clFinish(queue);
-        System.out.println("Value: " + valsBuff.get(0));
+        System.out.println("Maximum value: " + valsBuff.get(0));
         //do stuff here
         
         OpenCL.clReleaseKernel(kernel);

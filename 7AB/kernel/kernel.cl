@@ -23,3 +23,44 @@ kernel void max2(
 		stride *= 2;
 	}
 }
+
+kernel void max3(
+    global int* vals,
+    const int valSize,
+    local int* resultLoc
+    )
+{
+    int gID = get_global_id(0);
+    int wID = get_local_id(0);
+    int wSize = get_local_size(0);
+    int gSize = get_global_size(0);
+    int grID = get_group_id(0);
+    int grCnt = get_num_groups(0);
+
+    int i;
+    int workAmount  = valSize/grCnt;
+    int startOffset = workAmount * grID + wID;
+
+    if (gSize > valSize)
+    {
+        gSize = valSize;
+    }
+    
+    resultLoc[wID] = 0;
+    //gws / lws times
+    for (i = startOffset; i < gSize; i += wSize)
+    {
+        resultLoc[wID] = max(resultLoc[wID], vals[i]);
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (gID == 0)
+    {
+        //lws times
+        for (i = 1; i < wSize; i++)
+        {
+            resultLoc[0] = max(resultLoc[0], resultLoc[i]);
+        }
+        vals[0] = resultLoc[0];
+    }
+}
