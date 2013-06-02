@@ -64,3 +64,69 @@ kernel void max3(
         vals[0] = resultLoc[0];
     }
 }
+
+int getIndexRowMO(int i, int j, int m)
+{
+    return i * m + j;
+}   
+    
+kernel void calcMatProducts(
+    global int* A,
+    global int* B,
+    global int* C,
+    const int a_z,
+    const int a_s,
+    const int b_s
+    )
+{
+    private int id0 = get_global_id(0);
+    private int id1 = get_global_id(1);
+   
+    for (int k = 0; k < a_s; ++k)
+    {
+        C[getIndexRowMO(id1, id0, a_z)*(a_s) + k] = A[getIndexRowMO(id1, k, a_s)] * B[getIndexRowMO(k, id0, b_s)];
+    }
+}
+
+kernel void sumMat(
+    global int* vals,
+    global int* result,
+    const int valSize,
+    local int* resultLoc,
+    const int elem
+    )
+{
+    int gID = get_global_id(0);
+    int wID = get_local_id(0);
+    int wSize = get_local_size(0);
+    int gSize = get_global_size(0);
+    int grID = get_group_id(0);
+    int grCnt = get_num_groups(0);
+
+    int i;
+    int workAmount  = valSize/grCnt;
+    int startOffset = workAmount * grID + wID;
+
+    if (gSize > valSize)
+    {
+        gSize = valSize;
+    }
+    
+    resultLoc[wID] = 0;
+    //gws / lws times
+    for (i = startOffset*elem; i < gSize*elem; i += wSize)
+    {
+        resultLoc[wID] += vals[i];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (gID == 0)
+    {
+        //lws times
+        for (i = 1; i < wSize; i++)
+        {
+            resultLoc[0] += resultLoc[i];
+        }
+        result[elem] = resultLoc[0];
+    }
+}
