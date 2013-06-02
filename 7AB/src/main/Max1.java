@@ -41,14 +41,20 @@ public class Max1
         OpenCL.clBuildProgram(program, pair.device, "", null);
         kernel = OpenCL.clCreateKernel(program, "max1");
         
-        int[] vals = {5, 7, 1, 3 ,9, 2, 6, 18, 20, 65};
+        int[] vals = {5, 7, 1, 3 ,9, 2, 6, 18, 2, 3, -10};
+        
+        System.out.print("numbers: ");
+        for (int i = 0; i < vals.length; i++)
+        {
+            System.out.print(vals[i] + " ");
+        }
+        System.out.println();
         
         int newlength = vals.length;
         //do stuff here
         if(Integer.bitCount(newlength) > 1) {
         	newlength = Integer.highestOneBit(newlength) * 2;
         }
-        
         int stride = 1;
         int threadCnt = newlength/2;
         PointerBuffer gws_ValsCnt = new PointerBuffer(1);
@@ -66,6 +72,8 @@ public class Max1
         
         int log2n = (int) (Math.log(newlength) / Math.log(2));
         
+        System.out.println((log2n+1) + " kernel calls");
+        
         for(int i = 0; i < log2n; i++) {
             clEnqueueNDRangeKernel(queue, kernel, 1, null, gws_ValsCnt, null, null, null);
             clSetKernelArg(kernel, 1, stride*=2);
@@ -74,13 +82,13 @@ public class Max1
         }
         
         CL10.clEnqueueReadBuffer(queue, valsMem, CL10.CL_FALSE, 0, valsBuff, null, null);
-        System.out.println("Value: "+valsBuff.get(0));
+        CL10.clFinish(queue);
+        System.out.println("Value: " + valsBuff.get(0));
         
         OpenCL.clReleaseKernel(kernel);
         OpenCL.clReleaseCommandQueue(queue);
         OpenCL.clReleaseProgram(program);
         OpenCL.clReleaseContext(context);
-        
         
         CLUtil.destroyCL();
     }

@@ -45,11 +45,17 @@ public class Max2
         
         int[] vals = {5, 7, 10, 13 ,19 , 20, 6, 8, 100, 0, 0, 0, 0}; //val = 40
         
+        System.out.print("numbers: ");
+        for (int i = 0; i < vals.length; i++)
+        {
+            System.out.print(vals[i] + " ");
+        }
+        System.out.println();
+        
         int newlength = vals.length;
         if(Integer.bitCount(newlength) > 1) {
         	newlength = Integer.highestOneBit(newlength) * 2;
         }
-        
         PointerBuffer gws_ValsCnt = new PointerBuffer(1);
         gws_ValsCnt.put(0, newlength);
         IntBuffer valsBuff = BufferUtils.createIntBuffer(newlength);
@@ -72,7 +78,8 @@ public class Max2
         clEnqueueNDRangeKernel(queue, kernel, 1, null, gws_ValsCnt, gws_ValsCnt, null, null);
         
         CL10.clEnqueueReadBuffer(queue, valsMem, CL10.CL_FALSE, 0, valsBuff, null, null);
-        System.out.println("Value: "+valsBuff.get(0));
+        CL10.clFinish(queue);
+        System.out.println("Value: " + valsBuff.get(0));
         //do stuff here
         
         OpenCL.clReleaseKernel(kernel);
