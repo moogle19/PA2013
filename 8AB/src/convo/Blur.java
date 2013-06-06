@@ -1,6 +1,9 @@
 package convo;
 
 
+import static pa.cl.OpenCL.clCreateBuffer;
+import static pa.cl.OpenCL.clEnqueueNDRangeKernel;
+
 import java.nio.FloatBuffer;
 
 import org.lwjgl.BufferUtils;
@@ -46,7 +49,7 @@ public class Blur extends BlurBasis
     {
         public static int filterSize = 11;
         public static double sigma = 5;
-        public static double sigmaDelta = 0.5;
+        public static double sigmaDelta = 10.5;
         public static double filterSizeDelta = 2;
         public final static int MAX_FILTER_SIZE = 55;
         
@@ -65,7 +68,7 @@ public class Blur extends BlurBasis
     public void render() 
     {
         //TODO kernel call
-        
+        clEnqueueNDRangeKernel(queue, kernel, 1, null, globalWorkSize, null, null, null);
         if(blurredImage != null) //this is here to make sure the app doesnt crash if everything isn't initialized, it can be removed later
         {
             OpenCL.clEnqueueReadBuffer(queue, blurredImage, 1, 0, readBuffer, null, null);
@@ -107,14 +110,45 @@ public class Blur extends BlurBasis
         int imageWidth = textureData.w;
         int imageHeight = textureData.h;
         
+        globalWorkSize = new PointerBuffer(1);
+        globalWorkSize.put(0, imageWidth * imageHeight);
+        
+        int convSize = Settings.filterSize;
+        convSize *= convSize;
+        FloatBuffer convoBuffer = BufferUtils.createFloatBuffer(convSize+1);
+        convoBuffer.put(this.getGaussianBlurConvMask(Settings.filterSize, Settings.sigma));
+        
+        sourceImage = clCreateBuffer(context, CL10.CL_MEM_READ_WRITE | CL10.CL_MEM_COPY_HOST_PTR, rgbadata);
+        blurredImage = clCreateBuffer(context, CL10.CL_MEM_READ_WRITE | CL10.CL_MEM_COPY_HOST_PTR , readBuffer);
+        convolutionMask = clCreateBuffer(context, CL10.CL_MEM_READ_WRITE | CL10.CL_MEM_COPY_HOST_PTR , convoBuffer);
+
+        
+        kernel = OpenCL.clCreateKernel(clProgram, "blurrr");
+        
+        pa.cl.OpenCL.clSetKernelArg(kernel, 0, sourceImage);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 1, blurredImage);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 2, imageWidth);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 3, imageHeight);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 4, convolutionMask);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 5, Settings.filterSize);
+
         //TODO create kernel and buffer
         
     }
     
     public float[] getGaussianBlurConvMask(int size, double sigma)
-    {
-        float data[] = new float[size * size];
-        
+    {	
+    	int newsize = size;
+        float data[] = new float[newsize * newsize];
+        int halfnewsize = ((int) (newsize-1)) / 2;
+        System.out.println(halfnewsize);
+        int index = 0;
+        for(int i = -halfnewsize; i <= halfnewsize; i++) {
+        	for(int j = -halfnewsize; j < halfnewsize; j++) {
+        		data[index] = (float) ( 1/(Math.sqrt(2*Math.PI*sigma*sigma)*(Math.pow(Math.E, -((i*i+j*j)/2*sigma*sigma) ) ) ));
+        		++index;
+        	}
+        }
         //TODO create a gaussian blur filter
         
         return data;
@@ -123,35 +157,47 @@ public class Blur extends BlurBasis
     public void onSettingsChanged()
     {
         //TODO create the convo mask buffer, make sure to not create mem leaks. don't forget to set the new kernel args
-        
+        FloatBuffer convoBuffer = BufferUtils.createFloatBuffer(Settings.filterSize * Settings.filterSize + 1);
+        convoBuffer.put(this.getGaussianBlurConvMask(Settings.filterSize, Settings.sigma));
+        if(convolutionMask != null) {
+        	OpenCL.clReleaseMemObject(convolutionMask);
+        }
+        convolutionMask = clCreateBuffer(context, CL10.CL_MEM_READ_WRITE | CL10.CL_MEM_COPY_HOST_PTR , convoBuffer);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 4, convolutionMask);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 5, Settings.filterSize);
+
         Settings.print();
     }
 
     @Override
     public void increaseMaskSize() {
         // TODO increase filterSize
-        
+        if(Settings.filterSize <= Settings.MAX_FILTER_SIZE - Settings.filterSizeDelta) {
+        	Settings.filterSize += Settings.filterSizeDelta;
+        }
         onSettingsChanged();
     }
 
     @Override
     public void decreaseMaskSize() {
         // TODO decrease filterSize
-        
+    	if(Settings.filterSize > Settings.filterSizeDelta) {
+        	Settings.filterSize -= Settings.filterSizeDelta;
+        }
         onSettingsChanged();
     }
 
     @Override
     public void increaseStandardDevation() {
         //TODO increase sigma
-        
+        Settings.sigma += Settings.sigmaDelta;
         onSettingsChanged();
     }
 
     @Override
     public void decreaseStandardDevation() {
         // TODO decrease sigma
-        
+        Settings.sigma -= Settings.sigmaDelta;
         onSettingsChanged();
     }
     
