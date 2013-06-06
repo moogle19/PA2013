@@ -144,10 +144,12 @@ public class Blur extends BlurBasis
         System.out.println(halfnewsize);
         int index = 0;
         for(int i = -halfnewsize; i <= halfnewsize; i++) {
-        	for(int j = -halfnewsize; j < halfnewsize; j++) {
-        		data[index] = (float) ( 1/(Math.sqrt(2*Math.PI*sigma*sigma)*(Math.pow(Math.E, -((i*i+j*j)/2*sigma*sigma) ) ) ));
+        	for(int j = -halfnewsize; j <= halfnewsize; j++) {
+        		data[index] = (float) ( (1/(Math.sqrt(2*Math.PI*sigma*sigma))) * (Math.pow(Math.E, -(((i*i+j*j)/(2*sigma*sigma)) ) ) ) );
+        		System.out.print(data[index]+" ");
         		++index;
         	}
+        	System.out.println("");
         }
         //TODO create a gaussian blur filter
         
