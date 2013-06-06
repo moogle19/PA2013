@@ -43,19 +43,21 @@ kernel void blurrr(global float4* sourceImage,
 	int offsety = -((maskSize-1) / 2);
 	
 	float4 res = 0;
+	int size = 0;
 	
 	for(int i = 0; i < maskSize; i++) {
 		for(int j = 0; j < maskSize; j++) {
 			int idnew = id+offsety*imageWidth+offsetx;
 			if(idnew >= 0 && idnew < imageWidth*imageHeight) {
 				res += sourceImage[idnew];
-				offsety++;
+				size++;
 			}
+			offsety++;
 		}
 		offsetx++;
 		offsety = -((maskSize-1) / 2);
 		
 	}
-	res /= maskSize * maskSize;
+	res /= size;
 	destImage[id] = res;
 }
