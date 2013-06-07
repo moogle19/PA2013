@@ -37,6 +37,7 @@ public class Blur extends BlurBasis
     private PlatformDevicePair pair;
     
     private FloatBuffer readBuffer;
+    private FloatBuffer convoBuffer;
     
     //you have to init und use four three objects 
     private CLMem sourceImage = null;
@@ -44,12 +45,13 @@ public class Blur extends BlurBasis
     private CLKernel kernel = null;
     private PointerBuffer globalWorkSize;
     private CLMem convolutionMask = null;
+   
     
     private static class Settings
     {
         public static int filterSize = 11;
         public static double sigma = 5;
-        public static double sigmaDelta = 10.5;
+        public static double sigmaDelta = 0.5;
         public static double filterSizeDelta = 2;
         public final static int MAX_FILTER_SIZE = 55;
         
@@ -112,26 +114,30 @@ public class Blur extends BlurBasis
         
         globalWorkSize = new PointerBuffer(1);
         globalWorkSize.put(0, imageWidth * imageHeight);
-        
+
         int convSize = Settings.filterSize;
         convSize *= convSize;
-        FloatBuffer convoBuffer = BufferUtils.createFloatBuffer(convSize+1);
-        convoBuffer.put(this.getGaussianBlurConvMask(Settings.filterSize, Settings.sigma));
+        convoBuffer = BufferUtils.createFloatBuffer(convSize+1);
+        float[] gauss = getGaussianBlurConvMask(Settings.filterSize, Settings.sigma);
+        convoBuffer.rewind();
+        convoBuffer.put(gauss);
+        convoBuffer.rewind();
+        //convoBuffer.put(0, 1337);
+        
+        System.out.println(convoBuffer.get(0));
         
         sourceImage = clCreateBuffer(context, CL10.CL_MEM_READ_WRITE | CL10.CL_MEM_COPY_HOST_PTR, rgbadata);
         blurredImage = clCreateBuffer(context, CL10.CL_MEM_READ_WRITE | CL10.CL_MEM_COPY_HOST_PTR , readBuffer);
         convolutionMask = clCreateBuffer(context, CL10.CL_MEM_READ_WRITE | CL10.CL_MEM_COPY_HOST_PTR , convoBuffer);
-
         
         kernel = OpenCL.clCreateKernel(clProgram, "blurrr");
         
         pa.cl.OpenCL.clSetKernelArg(kernel, 0, sourceImage);
         pa.cl.OpenCL.clSetKernelArg(kernel, 1, blurredImage);
-        pa.cl.OpenCL.clSetKernelArg(kernel, 2, imageWidth);
-        pa.cl.OpenCL.clSetKernelArg(kernel, 3, imageHeight);
-        pa.cl.OpenCL.clSetKernelArg(kernel, 4, convolutionMask);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 2, convolutionMask);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 3, imageWidth);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 4, imageHeight);
         pa.cl.OpenCL.clSetKernelArg(kernel, 5, Settings.filterSize);
-
         //TODO create kernel and buffer
         
     }
@@ -159,13 +165,15 @@ public class Blur extends BlurBasis
     public void onSettingsChanged()
     {
         //TODO create the convo mask buffer, make sure to not create mem leaks. don't forget to set the new kernel args
-        FloatBuffer convoBuffer = BufferUtils.createFloatBuffer(Settings.filterSize * Settings.filterSize + 1);
-        convoBuffer.put(this.getGaussianBlurConvMask(Settings.filterSize, Settings.sigma));
-        if(convolutionMask != null) {
-        	OpenCL.clReleaseMemObject(convolutionMask);
-        }
-        convolutionMask = clCreateBuffer(context, CL10.CL_MEM_READ_WRITE | CL10.CL_MEM_COPY_HOST_PTR , convoBuffer);
-        pa.cl.OpenCL.clSetKernelArg(kernel, 4, convolutionMask);
+    	convoBuffer.clear();
+        convoBuffer = null;
+    	convoBuffer = BufferUtils.createFloatBuffer(Settings.filterSize * Settings.filterSize+1);
+    	convoBuffer.rewind();
+    	convoBuffer.put(this.getGaussianBlurConvMask(Settings.filterSize, Settings.sigma));
+    	convoBuffer.rewind();
+    	convolutionMask = null;
+        convolutionMask = clCreateBuffer(context, CL10.CL_MEM_READ_WRITE | CL10.CL_MEM_COPY_HOST_PTR, convoBuffer);
+        pa.cl.OpenCL.clSetKernelArg(kernel, 2, convolutionMask);
         pa.cl.OpenCL.clSetKernelArg(kernel, 5, Settings.filterSize);
 
         Settings.print();
@@ -199,7 +207,8 @@ public class Blur extends BlurBasis
     @Override
     public void decreaseStandardDevation() {
         // TODO decrease sigma
-        Settings.sigma -= Settings.sigmaDelta;
+    	if(Settings.sigma > Settings.sigmaDelta) 
+    		Settings.sigma -= Settings.sigmaDelta;
         onSettingsChanged();
     }
     

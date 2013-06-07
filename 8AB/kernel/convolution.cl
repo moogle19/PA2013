@@ -32,32 +32,32 @@ kernel void edges(
 
 kernel void blurrr(global float4* sourceImage, 
 	global float4* destImage,
+	global float* convolutionMask,
 	const int imageWidth,
 	const int imageHeight,
-	global float4* convolutionMask,
-	const int maskSize
+	int maskSize
 )
 {
 	int id = get_global_id(0);
 	int offsetx = -((maskSize-1) / 2);
 	int offsety = -((maskSize-1) / 2);
-	
+
 	float4 res = 0;
-	int size = 0;
-	
+	float sizeMask = 0;
+
 	for(int i = 0; i < maskSize; i++) {
 		for(int j = 0; j < maskSize; j++) {
 			int idnew = id+offsety*imageWidth+offsetx;
 			if(idnew >= 0 && idnew < imageWidth*imageHeight) {
-				res += sourceImage[idnew];
-				size++;
+				res += convolutionMask[j*maskSize+i] * sourceImage[idnew];
+				sizeMask += convolutionMask[i*maskSize+j];
 			}
 			offsety++;
 		}
 		offsetx++;
 		offsety = -((maskSize-1) / 2);
-		
+
 	}
-	res /= size;
+	res /= sizeMask;
 	destImage[id] = res;
 }
