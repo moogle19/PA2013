@@ -1,7 +1,9 @@
 
 constant float a[5] = {1,2,3,4,5}; //global constant array
 constant float sx[9] = {1, 0, -1, 2, 0, -2, 1, 0, -1};
-constant float sy[9] = {1, 2, -1, 0, 0, 0, -1, -2, -1};
+constant float sy[9] = {1, 2, 1, 0, 0, 0, -1, -2, -1};
+constant int masksize = 9;
+constant int masksizesq = 3;
 
 kernel void edges(
 	global float4* sourceImage, 
@@ -11,22 +13,31 @@ kernel void edges(
 {	
    	int id = get_global_id(0);
    	
-   	float4 resh = sourceImage[id-imageWidth-1];
-   	resh += 2 * sourceImage[id-imageWidth];
-   	resh += sourceImage[id-imageWidth+1];
-	resh -= sourceImage[id+imageWidth-1];
-	resh -= 2 * sourceImage[id+imageWidth];
-	resh -= sourceImage[id+imageWidth+1];
-	
-	float4 resv = sourceImage[id-imageWidth-1];
-	resv -= sourceImage[id-imageWidth+1];
-	resv += 2 * sourceImage[id-1];
-	resv -= 2 * sourceImage[id+1];
-	resv += sourceImage[id+imageWidth-1];
-	resv -= sourceImage[id+imageWidth-1];
-	
+   	float4 resh = {0,0,0,0};
+   	float4 resv = {0,0,0,0};
+   	float4 resImage[9];
+   	
+   	
+   	int index = 0;
+   	
+   	//load values in array
+   	for(int i = -((masksizesq-1)/2); i <= (masksizesq-1)/2; i++) {
+   		for(int j = -(3-1)/2; j <= (3-1)/2; j++) {
+   			resImage[index] = sourceImage[id+i*imageWidth-j];
+   			index++;
+   		}
+   	}
+   	
+   	for(int i = 0; i < masksize; i++) {
+   		resh += sy[i] * resImage[i];
+   	}
+   	for(int i = 0; i < masksize; i++) {
+   		resv += sx[i] * resImage[i];
+   	}
+   	
 	float4 res = sqrt(resh*resh+resv*resv);
 	destImage[id] = res;
+	
 	
 }
 
