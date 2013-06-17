@@ -27,33 +27,44 @@ kernel void arrangeNewRays( global int* exists,
 	
 	int state = exists[id];
 	
+	int value = 0;
 	//reduction
 	for (int i = 0; i < log2n; i++)
 	{
-		if(id % (2 * stride) == 0)
+		if(id % (2 * stride) == value)
 		{
-			firstId = 2*stride*id + stride -1;
+			firstId = id;//2 * stride * id + stride - 1;
 			secondId = firstId + stride;
 			exists[secondId] = exists[firstId] + exists[secondId];
 		}
 		barrier(CLK_GLOBAL_MEM_FENCE);
 		stride *= 2;
+		value *= 2;
+		value += 1;
 	}
 	exists[gws-1] = 0;
 	stride = gws/2;
-	
+	value = gws - 1;
 	//2nd reduction 
+	
+	exists[value] = 0;
+	value -= 1;
+	value /= 2;
+	
 	for (int i = 0; i < log2n; i++)
 	{
-		if(id % (2 * stride) == 0)
+		if(id % (2 * stride) == value)
 		{
-			firstId = 2*stride*id + stride -1;
+			firstId = id; //2 * stride * id + stride - 1;
 			secondId = firstId + stride;
 			tmpVal = exists[secondId];
 			exists[secondId] = exists[firstId] + tmpVal;
 			exists[firstId] = tmpVal;
+			exists[value] = 0;
 		}
 		barrier(CLK_GLOBAL_MEM_FENCE);
+		value -= 1;
+		value /= 2;
 		stride /= 2;
 	}
 	//compress
