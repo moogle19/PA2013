@@ -4,8 +4,10 @@ import java.nio.IntBuffer;
 import java.util.Random;
 
 import org.lwjgl.BufferUtils;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.opencl.CLCommandQueue;
 import org.lwjgl.opencl.CLContext;
+import org.lwjgl.opencl.CLKernel;
 import org.lwjgl.opencl.CLMem;
 import org.lwjgl.opencl.CLProgram;
 
@@ -29,10 +31,40 @@ public class Aufgabe1Blatt9 {
     private static IntBuffer rayExists = BufferUtils.createIntBuffer(width * height);
     private static IntBuffer rayMemoryAdress = BufferUtils.createIntBuffer(width * height);
     
+	private static CLMem clExists;
+	private static CLMem clMemoryAdress;
+	
+	private static CLKernel arrangeNewRays;
+    
+	private static PointerBuffer gws;
+	
     private static int arrangeRays(int raysCount)
     {   
         //TODO most stuff happens here
-        
+    	if(clExists != null) OpenCL.clReleaseMemObject(clExists);
+    	if(clMemoryAdress != null) OpenCL.clReleaseMemObject(clMemoryAdress);
+    	
+    	clExists = OpenCL.clCreateBuffer(context, OpenCL.CL_MEM_READ_ONLY | OpenCL.CL_MEM_COPY_HOST_PTR, rayExists);
+    	clMemoryAdress = OpenCL.clCreateBuffer(context, OpenCL.CL_MEM_READ_WRITE | OpenCL.CL_MEM_COPY_HOST_PTR, rayMemoryAdress);
+    	
+    	arrangeNewRays.setArg(0, clExists);
+    	arrangeNewRays.setArg(1, clMemoryAdress);
+    	arrangeNewRays.setArg(2, (int) (Math.log(raysCount)/ Math.log(2)));
+//    	arrangeNewRays.setArg(3, );
+    	
+    	System.out.print("Old indices: 	");
+    	pa.util.BufferHelper.printBuffer(rayMemoryAdress, 16);
+    	
+        OpenCL.clEnqueueNDRangeKernel(queue, arrangeNewRays, 1, null, gws, null, null, null);
+        OpenCL.clEnqueueReadBuffer(queue, clMemoryAdress, OpenCL.CL_TRUE, 0, rayMemoryAdress, null, null);
+    	
+        System.out.print("Existing: 	");
+        pa.util.BufferHelper.printBuffer(rayExists, 16);
+        System.out.print("New indices:	");
+        pa.util.BufferHelper.printBuffer(rayMemoryAdress, 16);
+        System.out.println();
+        System.out.println(raysCount);
+
         return 0; //returns the number of rays for the next iteration step
     }
     
@@ -47,8 +79,13 @@ public class Aufgabe1Blatt9 {
         program = OpenCL.clCreateProgramWithSource(context, IOUtil.readFileContent("kernel/kernel.cl"));
         OpenCL.clBuildProgram(program, pair.device, "", null);
         
-        //TODO kernels, memory etc. here
+        //TODO kernels, memory etc. here        
+        arrangeNewRays = OpenCL.clCreateKernel(program, "arrangeNewRays");
+
+        gws = BufferUtils.createPointerBuffer(1);
+        gws.put(0, height * width);
         
+
         int raysCount = width * height;
         
         initRays(rayExists);
@@ -62,6 +99,9 @@ public class Aufgabe1Blatt9 {
         }
         
         //TODO release stuff here
+        OpenCL.clReleaseMemObject(clMemoryAdress);
+        OpenCL.clReleaseMemObject(clExists);
+        OpenCL.clReleaseKernel(arrangeNewRays);
         OpenCL.clReleaseCommandQueue(queue);
         OpenCL.clReleaseProgram(program);
         OpenCL.clReleaseContext(context);
