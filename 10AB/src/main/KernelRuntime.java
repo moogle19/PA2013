@@ -35,8 +35,15 @@ public class KernelRuntime
         int elements = 1 << 20;
         
         CLMem mem = OpenCL.clCreateBuffer(context, 0, elements * SizeOf.INTEGER);
+        CLMem falses = OpenCL.clCreateBuffer(context, 0, elements * SizeOf.INTEGER);
+        CLMem falsesS = OpenCL.clCreateBuffer(context, 0, elements * SizeOf.INTEGER);
+        CLMem address = OpenCL.clCreateBuffer(context, 0, elements * SizeOf.INTEGER);
         
         OpenCL.clSetKernelArg(kernel, 0, mem);
+        OpenCL.clSetKernelArg(kernel, 1, falses);
+        OpenCL.clSetKernelArg(kernel, 2, falsesS);
+        OpenCL.clSetKernelArg(kernel, 3, address);
+        
         
         PointerBuffer gws = new PointerBuffer(1);
         gws.put(0, elements);
