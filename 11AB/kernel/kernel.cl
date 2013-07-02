@@ -1,5 +1,3 @@
-
-
 #define SIZE 512
 
 kernel void rngrngrng(global uint* data)
@@ -13,8 +11,47 @@ kernel void rngrngrng(global uint* data)
 	}
 }
 
-kernel void reduce(global int* data) 
+void reduce(int* data, uint id, uint blockSize) 
 {
+    for(uint s = 1; s <= blockSize; s *= 2)
+    {
+        if(id <= blockSize-s)
+        {
+            data[2 * id * s] = data[2 * id * s] + data[s * 2 * id + s];
+        }
+        barrier(CLK_GLOBAL_MEM_FENCE);
+    }
+}
+
+void reduceInverse(int* data, uint id, uint blockSize) 
+{
+    uint stride = 1;
+    for(uint s = blockSize; s > 0; s >>= 1)
+    {
+        if(id < stride)
+        {
+            int il = 2 * id * s;
+            int ir = il + s;
+            
+            int left = data[il];
+            int right = data[ir];
+                                
+            data[ir] = left;
+            
+            data[il] = left + right;
+        }
+        stride *= 2;
+        barrier(CLK_GLOBAL_MEM_FENCE);
+    }
+}
+
+kernel void scan(global int* data) 
+{	
+	uint id = get_global_id(0);
+	uint blockSize = get_global_size(0);
+	
+	reduce(data, id, blockSize);
+	reduceInverse(data, id, blockSize);
 	/*local int dataL[SIZE*2];
 
     uint id = get_global_id(0);
@@ -106,45 +143,4 @@ kernel void reduce(global int* data)
 		data[id * 2] = dataL[idL * 2];
 		data[id * 2 + 1] = dataL[idL * 2 + 1];
 	}*/
-	
-	
-	
-	
-	
-	
-	int stride = 1;
-	int grp_size = get_local_size(0);
-	int lid = get_local_id(0);
-
-	for(int d = grp_size; d > 0; d>>=1)
-	{
-		barrier(CLK_GLOBAL_MEM_FENCE);
-
-		if(lid < d)
-		{
-			int ai = stride*(2*lid+1)-1+offset;
-			int bi = stride*(2*lid+2)-1+offset;
-			input[bi] += input[ai];
-		}
-
-		stride *= 2;
-	}
-  
-	 int grp_size = get_local_size(0);
-	 int lid = get_local_id(0);
-	 int stride = grp_size*2;
-
-	 for(int d = 1; d <= grp_size; d *=2)
-	 {
-		barrier(CLK_GLOBAL_MEM_FENCE);
-
-		stride >>=1;
-
-		if(lid+1 < d)
-		{
-			int src = 2*(lid + 1)*stride-1+offset;
-			int dest = src + stride;
-			input[dest]+=input[src];
-		}
-  }
 }
