@@ -33,7 +33,7 @@ public class KernelRuntime
         
         OpenCL.clBuildProgram(program, pair.device, "", null);
         
-        CLKernel kernel = OpenCL.clCreateKernel(program, "reduce");
+        CLKernel kernel = OpenCL.clCreateKernel(program, "scan");
         
         int elements = 1 << 20;
         
@@ -56,7 +56,7 @@ public class KernelRuntime
         PointerBuffer lws = new PointerBuffer(1);
         lws.put(0, 512);
         
-        long nanos = CLUtil.measureKernelCall(kernel, queue, gws, null, 1);
+        long nanos = CLUtil.measureKernelCall(kernel, queue, gws, lws, 1);
         
         OpenCL.clEnqueueReadBuffer(queue, mem, OpenCL.CL_FALSE, 0, buff, null, null);
         
